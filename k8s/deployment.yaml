@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: express-4565
+  namespace: express-4565
+  labels:
+    app: express-4565
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: express-4565
+  template:
+    metadata:
+      labels:
+        app: express-4565
+    spec:
+      containers:
+        - name: express-4565
+          image: express-4565:latest          # replace with your registry image e.g. ghcr.io/<user>/express-4565:latest
+          imagePullPolicy: IfNotPresent       # use Always when pulling from a remote registry
+          ports:
+            - containerPort: 4565
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4565
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4565
+            initialDelaySeconds: 3
+            periodSeconds: 5

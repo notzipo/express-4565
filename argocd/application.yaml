@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: express-4565
+  namespace: argocd                  # ArgoCD is always installed in the argocd namespace
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io   # cascading delete: removes k8s resources when the App is deleted
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/notzipo/express-4565.git
+    targetRevision: HEAD             # track the default branch (main/master)
+    path: k8s                        # folder inside the repo that contains the manifests
+
+  destination:
+    server: https://kubernetes.default.svc   # the in-cluster API server
+    namespace: express-4565
+
+  syncPolicy:
+    automated:
+      prune: true       # delete resources removed from git
+      selfHeal: true    # revert out-of-band changes
+    syncOptions:
+      - CreateNamespace=true         # auto-create the namespace if it doesn't exist
