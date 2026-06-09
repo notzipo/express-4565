@@ -9,7 +9,7 @@ import apiIndexRoutes from './routes/api_index.js';
 dotenv.config();
 
 const config = {
-  ip: process.env.QNAP_IP || '182.168.1.110',
+  ip: process.env.QNAP_IP || '182.168.99.99',
   port: process.env.QNAP_PORT || 8080,
   username: process.env.QNAP_USER || 'omd',
   password: process.env.QNAP_PASS || '1234',
