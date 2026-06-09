@@ -27,17 +27,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── ENV setup ──────────────────────────────────────────────────────────
-      - name: Create .env file
+      - name: Create .env from repository secret
+        if: ${{ secrets.PROJECT_ENV != '' }}
         run: |
-          touch .env
-          echo "QNAP_IP={{ secrets.QNAP_IP }}" >> .env
-          echo "QNAP_PORT={{ secrets.QNAP_PORT }}" >> .env
-          echo "QNAP_USER=${{ secrets.QNAP_USER }}" >> .env
-          echo "QNAP_PASS={{ secrets.QNAP_PASS }}" >> .env
-          echo "PORT={{ secrets.PORT }}" >> .env
-          echo "USE_MOCK_SERVER=${{ secrets.USE_MOCK_SERVER }}" >> .env
-          echo "MOCK_SERVER_PORT=${{ secrets.MOCK_SERVER_PORT }}" >> .env
+          mkdir -p backend
+          printf '%s\n' "${{ secrets.PROJECT_ENV }}" > backend/.env
+          echo "Wrote backend/.env (contents masked)"
 
       # ── Docker setup ──────────────────────────────────────────────────────────
       - name: Set up Docker Buildx
