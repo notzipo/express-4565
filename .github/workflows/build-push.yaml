@@ -1,0 +1,85 @@
+name: Build & Push to GHCR
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:                        # only run when app code or Dockerfile changes
+      - 'backend/**'
+      - 'Dockerfile'
+      - 'package.json'
+      - 'yarn.lock'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}   # → ghcr.io/notzipo/express-4565
+
+jobs:
+  build-and-push:
+    name: Build & Push image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write              # needed to commit deployment.yaml back
+      packages: write              # needed to push to GHCR
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Docker setup ──────────────────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}   # automatically provided by GitHub
+
+      # ── Build & push ─────────────────────────────────────────────────────────
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-,format=short   # e.g. sha-a1b2c3d
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── Update deployment.yaml with the new sha tag ───────────────────────────
+      - name: Update image tag in deployment.yaml
+        env:
+          SHA_TAG: sha-${{ github.sha }}
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          NEW_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${SHORT_SHA}"
+
+          # Replace the active image line (not commented-out lines)
+          sed -i "s|^\( *\)image: ghcr\.io/.*|\1image: ${NEW_IMAGE}|" k8s/deployment.yaml
+
+          echo "Updated image to: ${NEW_IMAGE}"
+          cat k8s/deployment.yaml | grep "image:"
+
+      - name: Commit & push updated deployment.yaml
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add k8s/deployment.yaml
+
+          # Only commit if there's a change
+          git diff --staged --quiet || git commit -m "ci: update image tag to sha-$(echo ${{ github.sha }} | cut -c1-7) [skip ci]"
+          git push
