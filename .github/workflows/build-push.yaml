@@ -27,12 +27,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # - name: Create .env from repository secret
-      #   if: ${{ secrets.PROJECT_ENV != '' }}
-      #   run: |
-      #     mkdir -p backend
-      #     printf '%s\n' "${{ secrets.PROJECT_ENV }}" > backend/.env
-      #     echo "Wrote backend/.env (contents masked)"
+      - name: Create .env from repository secret
+        if: ${{ secrets.PROJECT_ENV != '' }}
+        run: |
+          mkdir -p backend
+          printf '%s\n' "${{ secrets.PROJECT_ENV }}" > backend/.env
+          echo "Wrote backend/.env (contents masked)"
 
       # ── Docker setup ──────────────────────────────────────────────────────────
       - name: Set up Docker Buildx
