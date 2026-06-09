@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: express-4565
-          image: ghcr.io/notzipo/express-4565:sha-f3447e0
+          image: ghcr.io/notzipo/express-4565:sha-f24365b
           imagePullPolicy: Always
           ports:
             - containerPort: 4565
