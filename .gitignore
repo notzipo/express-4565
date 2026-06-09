@@ -3,5 +3,7 @@ node_modules/
 .DS_Store
 *.log
 *.7z
-# session.json
+*session.json
+Create-new-QNAPUser-and-Add-to-QVPNUser.js
+first_promt_to_init_project.md
 zipMe.bat
