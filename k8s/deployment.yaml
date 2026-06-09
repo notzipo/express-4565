@@ -19,7 +19,8 @@ spec:
         - name: express-4565
           # image: notzipo/express-4565:latest   # public Docker Hub image
           # imagePullPolicy: Always               # always pull from Docker Hub
-          image: node:current-alpine3.23   # public Docker Hub image
+          # image: node:current-alpine3.23   # public Docker Hub image
+          image: ghcr.io/c112233c/testnodeci:latest
           imagePullPolicy: Always   
           ports:
             - containerPort: 4565
