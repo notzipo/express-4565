@@ -17,8 +17,10 @@ spec:
     spec:
       containers:
         - name: express-4565
-          image: express-4565:latest          # replace with your registry image e.g. ghcr.io/<user>/express-4565:latest
-          imagePullPolicy: IfNotPresent       # use Always when pulling from a remote registry
+          # image: notzipo/express-4565:latest   # public Docker Hub image
+          # imagePullPolicy: Always               # always pull from Docker Hub
+          image: node:current-alpine3.23   # public Docker Hub image
+          imagePullPolicy: Always   
           ports:
             - containerPort: 4565
           resources:
