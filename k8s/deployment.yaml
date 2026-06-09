@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: express-4565
+  namespace: express-apps
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: express-4565
+  template:
+    metadata:
+      labels:
+        app: express-4565
+    spec:
+      containers:
+        - name: express-4565
+          image: notzipo/express-4565:latest
+          ports:
+            - containerPort: 4565
+          env:
+            - name: NODE_ENV
+              value: production
+          resources:
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
