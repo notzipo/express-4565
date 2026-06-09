@@ -31,8 +31,8 @@ jobs:
         # if: ${{ secrets.PROJECT_ENV != '' }}
         run: |
           mkdir -p backend
-          printf '%s\n' "${{ secrets.PROJECT_ENV }}" > backend/.env
-          echo "Wrote backend/.env (contents masked)"
+          printf '%s\n' "${{ secrets.PROJECT_ENV }}" > .env
+          echo "Wrote .env (contents masked)"
 
       # ── Docker setup ──────────────────────────────────────────────────────────
       - name: Set up Docker Buildx
