@@ -11,7 +11,7 @@ spec:
 
   # Permit manifests to be sourced from any repository
   sourceRepos:
-    - '*'
+    - "*"
 
   # Destination clusters and namespaces where applications can deploy
   destinations:
@@ -20,5 +20,5 @@ spec:
 
   # Allow or deny specific cluster-scoped resources (e.g., Namespaces, CRDs)
   clusterResourceWhitelist:
-    - group: '*'
-      kind: '*'
+    - group: "*"
+      kind: "*"
