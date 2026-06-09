@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: express4565
+  namespace: demo
+  # Finalizers ensure resources are cleaned up cleanly if deleted
+  finalizers:
+    - resources-finalizer.argocd.argoproj.ini
+spec:
+  description: "A secure sandbox project for engineering teams"
+
+  # Permit manifests to be sourced from any repository
+  sourceRepos:
+    - '*'
+
+  # Destination clusters and namespaces where applications can deploy
+  destinations:
+    - server: in-cluster
+      namespace: demo
+
+  # Allow or deny specific cluster-scoped resources (e.g., Namespaces, CRDs)
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
