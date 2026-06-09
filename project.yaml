@@ -7,7 +7,7 @@ spec:
     name: in-cluster
     namespace: demo
   source:
-    path: /
+    path: backend
     repoURL: https://github.com/notzipo/express-4565.git
     targetRevision: HEAD
     directory:
