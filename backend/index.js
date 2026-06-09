@@ -1,14 +1,7 @@
-const express = require('express');
-const cors = require('cors');
+import { startServer } from './server.js';
 
-const app = express();
-app.use(cors());
-const port = 4565;
-
-app.get('/', (req, res) => {
-  res.send('Hello World! Z');
-});
-
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+// Start the Express application server
+startServer().catch((err) => {
+  console.error('Failed to start the Express application:', err);
+  process.exit(1);
 });
