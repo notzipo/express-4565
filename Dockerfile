@@ -13,6 +13,7 @@ WORKDIR /app
 
 COPY --from=builder /app/node_modules ./node_modules
 COPY package.json ./
+COPY .env ./
 COPY backend/ ./backend/
 
 EXPOSE 4565
