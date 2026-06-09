@@ -30,7 +30,6 @@ jobs:
       - name: Create .env from repository secret
         if: ${{ secrets.PROJECT_ENV != '' }}
         run: |
-          mkdir -p backend
           printf '%s\n' "${{ secrets.PROJECT_ENV }}" > backend/.env
           echo "Wrote backend/.env (contents masked)"
 
