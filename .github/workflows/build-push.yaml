@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create .env from repository secret
-        if: ${{ secrets.PROJECT_ENV != '' }}
+        # if: ${{ secrets.PROJECT_ENV != '' }}
         run: |
           mkdir -p backend
           printf '%s\n' "${{ secrets.PROJECT_ENV }}" > backend/.env
