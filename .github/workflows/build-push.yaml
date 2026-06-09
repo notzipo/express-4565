@@ -33,8 +33,6 @@ jobs:
           mkdir -p backend
           printf '%s\n' "${{ secrets.ENV_FILE_CONTENT }}" > backend/.env
           echo "Wrote backend/.env (contents masked)"
-          printf '%s\n' "${{ secrets.ENV_FILE_CONTENT }}" > .env
-          echo "Wrote .env (contents masked)"
 
       # ── Docker setup ──────────────────────────────────────────────────────────
       - name: Set up Docker Buildx

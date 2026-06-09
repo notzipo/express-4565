@@ -1,12 +1,30 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import { QnapClient } from './qnapClient.js';
 import qvpnRoutes from './routes/qvpn_index.js';
 import apiIndexRoutes from './routes/api_index.js';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables (look in backend/.env, then repo root, then CWD)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const envCandidates = [
+  path.resolve(__dirname, '.env'),      // backend/.env (packaged in image)
+  path.resolve(__dirname, '..', '.env'), // project root .env
+  path.resolve(process.cwd(), '.env'),   // current working dir .env
+];
+
+for (const envPath of envCandidates) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    console.log(`Loaded env from ${envPath}`);
+    break;
+  }
+}
 
 const config = {
   ip: process.env.QNAP_IP || '182.168.99.99',
