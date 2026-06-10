@@ -27,8 +27,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ── Create .env ────────────-──────────────────────────────────────────────
       - name: Create .env from repository secret
-        # if: ${{ secrets.PROJECT_ENV != '' }}
         run: |
           mkdir -p backend
           printf '%s\n' "${{ secrets.ENV_FILE_CONTENT }}" > backend/.env

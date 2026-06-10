@@ -15,36 +15,40 @@ function stringToBase64(str) {
   return btoa(binaryString);
 }
 
-const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-function encodeBase62(num) {
-    if (num === 0) return ALPHABET[0];
-    let encoded = "";
-    while (num > 0) {
-        encoded = ALPHABET[num % 62] + encoded;
-        num = Math.floor(num / 62);
-    }
-    return encoded;
+const BASE62ToAsciiPaded = (text) => {
+  return "A" + Array.from(text).map(char => char.charCodeAt(0).toString().padStart(3, 0)).join('');
 }
 
-function decodeBase62(str) {
-    let decoded = 0;
-    for (let i = 0; i < str.length; i++) {
-        decoded = decoded * 62 + ALPHABET.indexOf(str[i]);
-    }
-    return decoded;
+const deBASE62ToAsciiPaded = (text) => {
+  return "A" + Array.from(text).map(char => char.charCodeAt(0).toString().padStart(3, 0)).join('');
 }
 
-// Check Exist QNAP Local Username
-// GET /api/qnap/user_create/check_user/:uname
+const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+function toBase62(str) {
+  if (!str) return '';
+  // Encode input string bytes as a BigInt, then convert to base-62
+  const bytes = new TextEncoder().encode(str);
+  let num = 0n;
+  for (const byte of bytes) {
+    num = num * 256n + BigInt(byte);
+  }
+  if (num === 0n) return '0';
+  let result = '';
+  while (num > 0n) {
+    result = BASE62[Number(num % 62n)] + result;
+    num = num / 62n;
+  }
+  return result;
+}
+
 router.get('/user_create/check_user/:uname', async (req, res) => {
-  console.log(`[Route] /qnap/check_user accessed using SID: ${req.sid}, checking username: ${req.params.uname}`);
-  
+  console.log(`[Route] /api/qnap/user_create/check_user accessed using SID: ${req.sid}, checking username: ${req.params.uname}`);
+
   const client = req.app.get('qnapClient');
   const baseUrl = client.getBaseUrl();
 
   try {
-    const urlSearchParams = new URLSearchParams({ 
+    const urlSearchParams = new URLSearchParams({
       sid: req.sid,
       wiz_func: 'user_create',
       action: 'check_user',
@@ -68,7 +72,7 @@ router.get('/user_create/check_user/:uname', async (req, res) => {
     if (response.status === 200) {
       const xmlText = await response.data;
       const xmlParsed = new XMLParser().parse(xmlText.trim());
-      res.json({ status: true, data: { exists: xmlParsed.QDocRoot.func.ownContent.return == -1} });
+      res.json({ status: true, data: { exists: xmlParsed.QDocRoot.func.ownContent.return == -1 } });
     } else {
       res.json({ status: false });
     }
@@ -78,14 +82,12 @@ router.get('/user_create/check_user/:uname', async (req, res) => {
   }
 });
 
-// Add QNAP new Local Username
-// POST /api/qnap/user_create/add_user
+// Add User
 router.post('/user_create/add_user', async (req, res) => {
   const { uname, email, given_name, department } = req.body;
   console.log(`[Route] /api/qnap/user_create/add_user accessed using SID: ${req.sid}, creating user: ${uname}`);
-  // return res.json({ status: true, data: { settingResult: true } });
-  // exit(0);
 
+  console.log('uname', uname, "a_tel", String(toBase62(uname)),)
   const client = req.app.get('qnapClient');
   const baseUrl = client.getBaseUrl();
   const bodyParams = new URLSearchParams({
@@ -95,8 +97,7 @@ router.post('/user_create/add_user', async (req, res) => {
     rw_share_len: '0',
     no_share_len: '0',
     a_tel_country_code: '',
-    a_tel: '',
-    email: email || '',
+    a_tel: BASE62ToAsciiPaded(String(toBase62(uname))) || '',
     ps: '',
     gp_len: '2',
     gp0: 'everyone',
@@ -107,8 +108,9 @@ router.post('/user_create/add_user', async (req, res) => {
     comment: '',
     vol_no: '1',
     a_username: uname,
-    a_passwd: stringToBase64(encodeBase62(uname)) || 'UGVhQDEyMzQ%3D', // Base64 of 'Pea@1234'
-    a_email: '',
+    a_fullname: given_name,
+    a_passwd: stringToBase64(toBase62(uname)) || 'UGVhQDEyMzQ%3D',
+    a_email: email || '',
     a_description: `${given_name} [${department || 'N/A'}]`,
     recursive: '1',
     force_change_pw: '0',
@@ -155,4 +157,97 @@ router.post('/user_create/add_user', async (req, res) => {
   }
 });
 
+// Get UserInfo
+router.get('/user/info/:userName', async (req, res) => {
+  console.log(`[Route] /api/qnap/user/info accessed using SID: ${req.sid}`);
+
+  const client = req.app.get('qnapClient');
+  const baseUrl = client.getBaseUrl();
+
+  try {
+    const urlSearchParams = new URLSearchParams({ sid: req.sid, wiz_func: 'user_edit', userName: req.params.userName, type: 0 });
+    const response = await axiosInstance.post(
+      `${baseUrl}/cgi-bin/priv/privWizard.cgi`,
+      urlSearchParams,
+      {
+        headers: {
+          'accept': '*/*',
+          'cache-control': 'no-cache, no-store',
+          'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'origin': baseUrl,
+          'pragma': 'no-cache',
+          'sec-fetch-mode': 'cors'
+        }
+      }
+    );
+
+    if (response.status === 200) {
+      const xmlText = await response.data;
+      const xmlParsed = new XMLParser().parse(xmlText.trim());
+      const userInfoData = {
+        userInfo: xmlParsed.QDocRoot.userInfo
+      }
+      res.json({ status: true, response: userInfoData });
+    } else {
+      res.json({ status: false });
+    }
+  } catch (error) {
+    console.error('[Route] Failed to retrieve userInfo:', error.message);
+    res.status(500).json({ status: false, error: error.message });
+  }
+});
+
+// Update UserInfo
+router.post('/user/info/:userName', async (req, res) => {
+  const { userName } = req.params;
+  const { a_fullname, a_tel, a_description } = req.body;
+  console.log(`[Route] POST /api/qnap/user/info/${userName} accessed using SID: ${req.sid}`);
+
+  const client = req.app.get('qnapClient');
+  const baseUrl = client.getBaseUrl();
+
+  try {
+    const urlSearchParams = new URLSearchParams({
+      wiz_func: 'user_edit', action: 'account_edit', type: '0',
+      username: userName,
+      a_fullname: a_fullname || '',
+      a_tel: a_tel || '',
+      a_description: a_description || '',
+    });
+
+    const response = await axiosInstance.post(
+      `${baseUrl}/cgi-bin/priv/privWizard.cgi?sid=${req.sid}`,
+      urlSearchParams,
+      {
+        headers: {
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Connection': 'keep-alive',
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Origin': baseUrl,
+          'Referer': `${baseUrl}/cgi-bin/`,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }
+    );
+
+    if (response.status === 200) {
+      const xmlText = response.data;
+      const xmlParsed = new XMLParser().parse(typeof xmlText === 'string' ? xmlText.trim() : xmlText);
+      const authPassed = xmlParsed?.QDocRoot?.authPassed;
+      res.json({ status: true, data: { authPassed } });
+    } else {
+      res.json({ status: false });
+    }
+  } catch (error) {
+    console.error(`[Route] Failed to update user info for ${userName}:`, error.message);
+    res.status(500).json({ status: false, error: error.message });
+  }
+});
+
 export default router;
+
+
+// const reverseDateTime = String(new Date().getTime()).split('').reverse().join('');
+// 7483306601871 1TkCENsaV3moqmmwmf
+// 5504506601871 1QQVUg0MkdTSGUAEnB

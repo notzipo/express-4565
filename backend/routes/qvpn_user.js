@@ -4,10 +4,9 @@ import axios from 'axios';
 const router = express.Router();
 const axiosInstance = axios.create();
 
-// GET /query
 router.get('/query', async (req, res) => {
   console.log(`[Route] /qvpn/user/query accessed using SID: ${req.sid}`);
-  
+
   const client = req.app.get('qnapClient');
   const baseUrl = client.getBaseUrl();
 
