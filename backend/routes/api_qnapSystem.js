@@ -1,5 +1,5 @@
 import express from 'express';
-import xml from 'xml';
+import Base62Token from 'base62-token';
 import { XMLParser } from 'fast-xml-parser';
 import axios from 'axios';
 
@@ -20,10 +20,16 @@ const BASE62ToAsciiPaded = (text) => {
 }
 
 const deBASE62ToAsciiPaded = (text) => {
-  return "A" + Array.from(text).map(char => char.charCodeAt(0).toString().padStart(3, 0)).join('');
+  return text.slice(1).match(new RegExp('.{1,' + 3 + '}', 'g')).map(x => String.fromCharCode(x)).join('')
 }
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const b62Token = Base62Token.create(BASE62);
+
+function genPasswd() {
+  return b62Token.generate("", 2);
+}
+
 function toBase62(str) {
   if (!str) return '';
   // Encode input string bytes as a BigInt, then convert to base-62
@@ -41,6 +47,7 @@ function toBase62(str) {
   return result;
 }
 
+// Check user is exists
 router.get('/user_create/check_user/:uname', async (req, res) => {
   console.log(`[Route] /api/qnap/user_create/check_user accessed using SID: ${req.sid}, checking username: ${req.params.uname}`);
 
@@ -72,7 +79,14 @@ router.get('/user_create/check_user/:uname', async (req, res) => {
     if (response.status === 200) {
       const xmlText = await response.data;
       const xmlParsed = new XMLParser().parse(xmlText.trim());
-      res.json({ status: true, data: { exists: xmlParsed.QDocRoot.func.ownContent.return == -1 } });
+      const exists = xmlParsed.QDocRoot.func.ownContent.return == -1
+      if (exists) {
+        req.needUserInfo = true;
+        req.params.userName = req.params.uname
+        getUserInfo(req, res);
+      } else {
+        res.json({ status: true, data: { exists: false } });
+      }
     } else {
       res.json({ status: false });
     }
@@ -87,7 +101,7 @@ router.post('/user_create/add_user', async (req, res) => {
   const { uname, email, given_name, department } = req.body;
   console.log(`[Route] /api/qnap/user_create/add_user accessed using SID: ${req.sid}, creating user: ${uname}`);
 
-  console.log('uname', uname, "a_tel", String(toBase62(uname)),)
+  // console.log('uname', uname, "a_tel", String(toBase62(uname)),)
   const client = req.app.get('qnapClient');
   const baseUrl = client.getBaseUrl();
   const bodyParams = new URLSearchParams({
@@ -157,8 +171,8 @@ router.post('/user_create/add_user', async (req, res) => {
   }
 });
 
-// Get UserInfo
-router.get('/user/info/:userName', async (req, res) => {
+
+const getUserInfo = async (req, res) => {
   console.log(`[Route] /api/qnap/user/info accessed using SID: ${req.sid}`);
 
   const client = req.app.get('qnapClient');
@@ -187,7 +201,12 @@ router.get('/user/info/:userName', async (req, res) => {
       const userInfoData = {
         userInfo: xmlParsed.QDocRoot.userInfo
       }
-      res.json({ status: true, response: userInfoData });
+
+      if (req.needUserInfo) {
+        res.json({ status: true, data: { exists: true, ...userInfoData } });
+      } else {
+        res.json({ status: true, response: userInfoData });
+      }
     } else {
       res.json({ status: false });
     }
@@ -195,12 +214,15 @@ router.get('/user/info/:userName', async (req, res) => {
     console.error('[Route] Failed to retrieve userInfo:', error.message);
     res.status(500).json({ status: false, error: error.message });
   }
-});
+}
+
+// Get UserInfo
+router.get('/user/info/:userName', getUserInfo);
 
 // Update UserInfo
-router.post('/user/info/:userName', async (req, res) => {
+const updateUserInfo = async (req, res) => {
   const { userName } = req.params;
-  const { a_fullname, a_tel, a_description } = req.body;
+  const { a_fullname, a_tel, a_description, } = req.body;
   console.log(`[Route] POST /api/qnap/user/info/${userName} accessed using SID: ${req.sid}`);
 
   const client = req.app.get('qnapClient');
@@ -243,11 +265,62 @@ router.post('/user/info/:userName', async (req, res) => {
     console.error(`[Route] Failed to update user info for ${userName}:`, error.message);
     res.status(500).json({ status: false, error: error.message });
   }
+};
+router.post('/user/info/:userName', updateUserInfo);
+
+// User change password
+router.post('/user/passwd/:userName', async (req, res) => {
+  const { userName } = req.params;
+  const { fullname, description } = req.body;
+
+  console.log(`[Route] POST /api/qnap/user/passwd/${userName} accessed using SID: ${req.sid}`);
+
+  const client = req.app.get('qnapClient');
+  const baseUrl = client.getBaseUrl();
+
+  const newPasswd = genPasswd();
+  try {
+    const urlSearchParams = new URLSearchParams({
+      wiz_func: 'user_password_edit', action: 'user_password_edit',
+      username: userName,
+      password: stringToBase64(newPasswd) || 'UGVhQDEyMzQ=',
+      old_password: '',
+      need_check: 'no',
+    });
+
+    const response = await axiosInstance.post(
+      `${baseUrl}/cgi-bin/priv/privWizard.cgi?sid=${req.sid}&wiz_func=user_password_edit&action=user_password_edit`,
+      urlSearchParams,
+      {
+        headers: {
+          'Accept': '*/*',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Connection': 'keep-alive',
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'Origin': baseUrl,
+          'Referer': `${baseUrl}/cgi-bin/`,
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }
+    );
+
+    if (response.status === 200) {
+      const xmlText = response.data;
+      const xmlParsed = new XMLParser().parse(typeof xmlText === 'string' ? xmlText.trim() : xmlText);
+      const authPassed = xmlParsed?.QDocRoot?.authPassed;
+
+      req.body.a_fullname = fullname;
+      req.body.a_tel = BASE62ToAsciiPaded(newPasswd);
+      req.body.a_description = description;
+
+      updateUserInfo(req, res);
+    } else {
+      res.json({ status: false });
+    }
+  } catch (error) {
+    console.error(`[Route] Failed to update user info for ${userName}:`, error.message);
+    res.status(500).json({ status: false, error: error.message });
+  }
 });
 
 export default router;
-
-
-// const reverseDateTime = String(new Date().getTime()).split('').reverse().join('');
-// 7483306601871 1TkCENsaV3moqmmwmf
-// 5504506601871 1QQVUg0MkdTSGUAEnB

@@ -32,6 +32,13 @@ axios@^1.17.0:
     https-proxy-agent "^5.0.1"
     proxy-from-env "^2.1.0"
 
+base62-token@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/base62-token/-/base62-token-1.1.1.tgz#ad9f9f75096e2aacdda07aba46161e05319d1150"
+  integrity sha512-hMt173dv6s24lkif4lNfJHCN5y/Y1KqVQyMusq6P7F255+444b3W3ivmNGZCXnGyes4Om1TPhp6L1vOCMySI8w==
+  dependencies:
+    crc-32 "^1.2.0"
+
 body-parser@^2.2.1:
   version "2.2.2"
   resolved "https://registry.yarnpkg.com/body-parser/-/body-parser-2.2.2.tgz#1a32cdb966beaf68de50a9dfbe5b58f83cb8890c"
@@ -107,6 +114,11 @@ cors@^2.8.6:
   dependencies:
     object-assign "^4"
     vary "^1"
+
+crc-32@^1.2.0:
+  version "1.2.2"
+  resolved "https://registry.yarnpkg.com/crc-32/-/crc-32-1.2.2.tgz#3cad35a934b8bf71f25ca524b6da51fb7eace2ff"
+  integrity sha512-ROmzCKrTnOwybPcJApAA6WBWij23HVfGVNKqqrZpuyZOHqK2CwHSvpGuyt/UNNvaIjEd8X5IFGp4Mh+Ie1IHJQ==
 
 debug@4, debug@^4.4.0, debug@^4.4.3:
   version "4.4.3"
