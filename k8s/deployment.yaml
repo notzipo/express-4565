@@ -18,7 +18,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: express-4565
-          image: ghcr.io/notzipo/express-4565:sha-8d34736
+          image: ghcr.io/notzipo/express-4565:sha-cd8c60f
           imagePullPolicy: Always
           ports:
             - containerPort: 4565
