@@ -1,5 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
-import fs from 'fs/promises';
+import fs from 'node:fs/promises';
 
 /**
  * QnapClient handles connection and authentication with a QNAP server.
@@ -51,7 +51,7 @@ export class QnapClient {
     try {
       const data = await fs.readFile(this.sessionFilePath, 'utf8');
       const session = JSON.parse(data);
-      if (session && session.sid) {
+      if (session?.sid) {
         this.sid = session.sid;
         this.qtoken = session.qtoken;
         return session;
@@ -105,11 +105,10 @@ export class QnapClient {
 
       const xmlText = await response.text();
       console.log(`[QnapClient] Raw response received`);
-      // console.log(xmlText.trim());
 
       const result = this.parser.parse(xmlText);
 
-      if (!result || !result.QDocRoot) {
+      if (!result?.QDocRoot) {
         throw new Error('Invalid response structure received from QNAP server (missing QDocRoot)');
       }
 
@@ -129,7 +128,7 @@ export class QnapClient {
       } else {
         return {
           success: false,
-          errorValue: qdoc.errorValue !== undefined ? Number(qdoc.errorValue) : -1,
+          errorValue: qdoc.errorValue == undefined ? -1 : Number(qdoc.errorValue),
           qtoken: qdoc.qtoken
         };
       }
@@ -160,10 +159,9 @@ export class QnapClient {
 
       const xmlText = await response.text();
       console.log(`[QnapClient] Raw session check response received`);
-      // console.log(xmlText.trim());
 
       const result = this.parser.parse(xmlText);
-      if (!result || !result.QDocRoot) {
+      if (!result?.QDocRoot) {
         throw new Error('Invalid response structure received from QNAP server (missing QDocRoot)');
       }
 
@@ -195,11 +193,10 @@ export class QnapClient {
 
       const xmlText = await response.text();
       console.log(`[QnapClient] Raw renewal response received`);
-      // console.log(xmlText.trim());
 
       const result = this.parser.parse(xmlText);
 
-      if (!result || !result.QDocRoot) {
+      if (!result?.QDocRoot) {
         throw new Error('Invalid response structure received from QNAP server (missing QDocRoot)');
       }
 
@@ -219,7 +216,7 @@ export class QnapClient {
       } else {
         return {
           success: false,
-          errorValue: qdoc.errorValue !== undefined ? Number(qdoc.errorValue) : -1,
+          errorValue: qdoc.errorValue == undefined ? -1 : Number(qdoc.errorValue),
           qtoken: qdoc.qtoken
         };
       }
