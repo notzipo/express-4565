@@ -1,8 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import { QnapClient } from './qnapClient.js';
 import qvpnRoutes from './routes/qvpn_index.js';
@@ -40,14 +40,17 @@ const config = {
 const app = express();
 app.disable('x-powered-by');
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://*.pealive.com',
+];
+
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    '*.pealive.com'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: allowedOrigins,
+  optionsSuccessStatus: 200,
+  credentials: true,
 };
+
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -307,7 +307,7 @@ router.post('/user/passwd/:userName', async (req, res) => {
     if (response.status === 200) {
       const xmlText = response.data;
       const xmlParsed = new XMLParser().parse(typeof xmlText === 'string' ? xmlText.trim() : xmlText);
-      const authPassed = xmlParsed?.QDocRoot?.authPassed;
+      // const authPassed = xmlParsed?.QDocRoot?.authPassed;
 
       req.body.a_fullname = fullname;
       req.body.a_tel = BASE62ToAsciiPaded(newPasswd);
