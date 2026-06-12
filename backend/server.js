@@ -38,7 +38,17 @@ const config = {
 
 // Initialize Express App
 const app = express();
-app.use(cors());
+app.disable('x-powered-by');
+
+const corsOptions = {
+  origin: [
+    'http://localhost:5173',
+    '*.pealive.com'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

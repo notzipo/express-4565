@@ -10,17 +10,17 @@ function stringToBase64(str) {
   // 1. Convert string to a stream of UTF-8 bytes
   const utf8Bytes = new TextEncoder().encode(str);
   // 2. Convert bytes to a binary string
-  const binaryString = String.fromCharCode(...utf8Bytes);
+  const binaryString = String.fromCodePoint(...utf8Bytes);
   // 3. Encode the binary string to Base64
   return btoa(binaryString);
 }
 
 const BASE62ToAsciiPaded = (text) => {
-  return "A" + Array.from(text).map(char => char.charCodeAt(0).toString().padStart(3, 0)).join('');
+  return "A" + Array.from(text).map(char => char.codePointAt(0).toString().padStart(3, 0)).join('');
 }
 
 const deBASE62ToAsciiPaded = (text) => {
-  return text.slice(1).match(new RegExp('.{1,' + 3 + '}', 'g')).map(x => String.fromCharCode(x)).join('')
+  return text.slice(1).match(new RegExp('.{1,' + 3 + '}', 'g')).map(x => String.fromCodePoint(x)).join('')
 }
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -123,7 +123,7 @@ router.post('/user_create/add_user', async (req, res) => {
     vol_no: '1',
     a_username: uname,
     a_fullname: given_name,
-    a_passwd: stringToBase64(toBase62(uname)) || 'UGVhQDEyMzQ%3D',
+    a_passwd: stringToBase64(toBase62(uname)) || stringToBase64('Pea@1234'),
     a_email: email || '',
     a_description: `${given_name} [${department || 'N/A'}]`,
     recursive: '1',
@@ -283,7 +283,7 @@ router.post('/user/passwd/:userName', async (req, res) => {
     const urlSearchParams = new URLSearchParams({
       wiz_func: 'user_password_edit', action: 'user_password_edit',
       username: userName,
-      password: stringToBase64(newPasswd) || 'UGVhQDEyMzQ=',
+      password: stringToBase64(newPasswd) || stringToBase64('Pea@1234'),
       old_password: '',
       need_check: 'no',
     });

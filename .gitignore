@@ -1,8 +1,11 @@
 node_modules/
+session.json
+**.mockServer.js
 .env
 .DS_Store
 *.log
 *.7z
+*.old
 *session.json
 Create-new-QNAPUser-and-Add-to-QVPNUser.js
 first_promt_to_init_project.md

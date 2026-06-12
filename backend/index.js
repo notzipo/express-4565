@@ -1,7 +1,14 @@
 import { startServer } from './server.js';
 
 // Start the Express application server
-startServer().catch((err) => {
+// startServer().catch((err) => {
+//   console.error('Failed to start the Express application:', err);
+//   process.exit(1);
+// });
+
+try {
+  await startServer();
+} catch (err) {
   console.error('Failed to start the Express application:', err);
   process.exit(1);
-});
+}

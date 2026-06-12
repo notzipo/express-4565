@@ -1,6 +1,11 @@
 # ---- Build Stage ----
 FROM node:22-alpine AS builder
 
+# add new user 'nonroot'
+RUN addgroup -S nonroot \
+    && adduser -S nonroot -G nonroot
+USER nonroot
+
 WORKDIR /app
 
 COPY package.json yarn.lock ./
@@ -8,6 +13,11 @@ RUN yarn install --frozen-lockfile --production
 
 # ---- Runtime Stage ----
 FROM node:22-alpine
+
+# add new user 'nonroot'
+RUN addgroup -S nonroot \
+    && adduser -S nonroot -G nonroot
+USER nonroot
 
 WORKDIR /app
 

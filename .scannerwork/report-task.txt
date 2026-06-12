@@ -1,0 +1,6 @@
+projectKey=vpn-interface-service
+serverUrl=https://sonar.pealive.com
+serverVersion=26.5.0.122743
+dashboardUrl=https://sonar.pealive.com/dashboard?id=vpn-interface-service
+ceTaskId=a0f75c55-2910-42f2-ad05-09a83a60227e
+ceTaskUrl=https://sonar.pealive.com/api/ce/task?id=a0f75c55-2910-42f2-ad05-09a83a60227e
