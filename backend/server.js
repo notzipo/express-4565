@@ -104,7 +104,7 @@ export async function startServer() {
 
   return new Promise((resolve) => {
     const server = app.listen(config.serverPort, () => {
-      console.log(`🚀 [QNAP-Interface Service] listening on http://localhost:${config.serverPort}`);
+      console.log(`🚀 QNAP-Interface Service listening on http://localhost:${config.serverPort}`);
       resolve(server);
     });
   });
