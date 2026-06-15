@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import cors from 'cors';
+import session from 'express-session';
+import Keycloak from 'keycloak-connect';
 import { QnapClient } from './qnapClient.js';
-import qvpnRoutes from './routes/qvpn_index.js';
-import apiIndexRoutes from './routes/api_index.js';
 
 // Load environment variables (look in backend/.env, then repo root, then CWD)
 const __filename = fileURLToPath(import.meta.url);
@@ -26,7 +26,7 @@ for (const envPath of envCandidates) {
   }
 }
 
-const config = {
+const qnapConfig = {
   ip: process.env.QNAP_IP || '182.168.99.99',
   port: process.env.QNAP_PORT || 8080,
   username: process.env.QNAP_USER || 'omd',
@@ -36,64 +36,98 @@ const config = {
   serverPort: process.env.PORT || 4565,
 };
 
-// Initialize Express App
+// ── Keycloak Config ──────────────────────────────────────────────────────────
+const keycloakConfig = {
+  realm: process.env.KEYCLOAK_REALM,
+  'auth-server-url': process.env.KEYCLOAK_AUTH_SERVER_URL,
+  'ssl-required': process.env.KEYCLOAK_SSL_REQUIRED || 'external',
+  resource: process.env.KEYCLOAK_RESOURCE,
+  'bearer-only': true, // API mode — no browser redirects, just 401 on missing/invalid token
+};
+
+// ── Initialize Express App ───────────────────────────────────────────────────
 const app = express();
 app.disable('x-powered-by');
 
-const allowedOrigins = [
+const ALLOWED_ORIGINS = [
   'http://localhost:5173',
-  'https://*.pealive.com',
 ];
 
+// Regex for wildcard subdomains: https://<anything>.pealive.com
+const PEALIVE_ORIGIN_RE = /^https:\/\/[^.]+\.pealive\.com$/;
+
 const corsOptions = {
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    // Allow server-to-server (no Origin) or whitelisted origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || PEALIVE_ORIGIN_RE.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin '${origin}' not allowed`));
+    }
+  },
   optionsSuccessStatus: 200,
   credentials: true,
 };
 
+// Handle ALL preflight OPTIONS requests before any auth middleware runs.
+// Without this, keycloak.protect() would reject OPTIONS with 401.
+// NOTE: Express 5 dropped bare '*' — use a RegExp instead.
+app.options(/.*/, cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Initialize QnapClient
+// ── Session (required by keycloak-connect) ───────────────────────────────────
+const memoryStore = new session.MemoryStore();
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'qvpn-kc-secret-change-me',
+  resave: false,
+  saveUninitialized: false,
+  store: memoryStore,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax',
+  },
+}));
+
+// ── Keycloak Middleware ───────────────────────────────────────────────────────
+const keycloak = new Keycloak({ store: memoryStore }, keycloakConfig);
+app.use(keycloak.middleware());
+
+console.log(`🔐 Keycloak realm: ${keycloakConfig.realm} | resource: ${keycloakConfig.resource} | url: ${keycloakConfig['auth-server-url']}`);
+
+// ── Initialize QnapClient ─────────────────────────────────────────────────────
 const qnapClient = new QnapClient({
-  ...config,
-  password: config.useMockServer ? '1234' : config.password,
-  sessionFilePath: config.useMockServer ? './mock_session.json' : './session.json'
+  ...qnapConfig,
+  password: qnapConfig.useMockServer ? '1234' : qnapConfig.password,
+  sessionFilePath: qnapConfig.useMockServer ? './mock_session.json' : './session.json'
 });
 
 // Expose the QnapClient to express request context
 app.set('qnapClient', qnapClient);
 
-// Mount routes
-app.use('/vpn', qvpnRoutes);
-app.use('/api', apiIndexRoutes);
+// ── Routes ────────────────────────────────────────────────────────────────────
+import routes from './routes/index.js';
+app.use('/', routes(qnapConfig, keycloak));
 
-// Root path diagnostic route
-app.get('/', (req, res) => {
-  res.json({
-    message: 'QVPN Interface Service is running',
-    status: 'online',
-    mockMode: config.useMockServer
-  });
-});
-
-// Start function
+// ── Start function ────────────────────────────────────────────────────────────
 export async function startServer() {
   console.log('=== Starting QVPN Interface Service ===');
-  console.log(`Configured Port: ${config.serverPort}`);
-  console.log(`Target QNAP: ${config.ip}:${config.port} (Mock: ${config.useMockServer})`);
-  
+  console.log(`Configured Port: ${qnapConfig.serverPort}`);
+  console.log(`Target QNAP: ${qnapConfig.ip}:${qnapConfig.port} (Mock: ${qnapConfig.useMockServer})`);
+
   try {
     // Perform initial authentication to establish session
     console.log('Attempting initial QNAP authentication...');
     const authResult = await qnapClient.authenticate();
-    
+
     if (authResult.success) {
       console.log(`✅ Successfully authenticated on startup. SID: ${authResult.sid}`);
-      
+
       // Start auto-renewal timer (e.g. every 60 minutes, or 2 minutes in mock mode for faster cycles if wanted)
-      const renewalInterval = config.useMockServer ? 60000 : 60 * 60 * 1000;
+      const renewalInterval = qnapConfig.useMockServer ? 60000 : 60 * 60 * 1000;
       qnapClient.startAutoRenewal(renewalInterval);
     } else {
       console.warn(`⚠️ Warning: Startup authentication failed. Error: ${authResult.errorValue || 'Unknown error'}`);
@@ -103,8 +137,8 @@ export async function startServer() {
   }
 
   return new Promise((resolve) => {
-    const server = app.listen(config.serverPort, () => {
-      console.log(`🚀 QNAP-Interface Service listening on http://localhost:${config.serverPort}`);
+    const server = app.listen(qnapConfig.serverPort, () => {
+      console.log(`🚀 QNAP-Interface Service listening on http://localhost:${qnapConfig.serverPort}`);
       resolve(server);
     });
   });

@@ -6,8 +6,8 @@ const axiosInstance = axios.create();
 
 // GET /current_users
 router.get('/current_users', async (req, res) => {
-  console.log(`[Route] /qvpn/current_users accessed using SID: ${req.sid}`);
-  
+  console.log(`!!!! [Route] /qvpn/current_users accessed using SID: ${req.sid}`);
+
   const client = req.app.get('qnapClient');
   const baseUrl = client.getBaseUrl();
 

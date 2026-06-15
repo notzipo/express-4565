@@ -5,10 +5,10 @@ import logRoutes from './qvpn_log.js';
 import privilegeRoutes from './qpvn_privilege.js';
 import userRoutes from './qvpn_user.js';
 
-const router = express.Router();
+const vpnIndexRoutes = express.Router();
 
 // Middleware to ensure a valid SID (including renewed session if current one expires)
-router.use(async (req, res, next) => {
+vpnIndexRoutes.use(async (req, res, next) => {
   const client = req.app.get('qnapClient');
   if (!client) {
     return res.status(500).json({ error: 'QnapClient is not initialized on the application.' });
@@ -37,10 +37,10 @@ router.use(async (req, res, next) => {
 });
 
 // Mount modular subroutes
-router.use('/connection', connectionRoutes);
-router.use('/misc', miscRoutes);
-router.use('/log', logRoutes);
-router.use('/user', userRoutes);
-router.use('/privilege', privilegeRoutes);
+vpnIndexRoutes.use('/connection', connectionRoutes);
+vpnIndexRoutes.use('/misc', miscRoutes);
+vpnIndexRoutes.use('/log', logRoutes);
+vpnIndexRoutes.use('/user', userRoutes);
+vpnIndexRoutes.use('/privilege', privilegeRoutes);
 
-export default router;
+export default vpnIndexRoutes;
