@@ -96,7 +96,7 @@ app.use(session({
 const keycloak = new Keycloak({ store: memoryStore }, keycloakConfig);
 app.use(keycloak.middleware());
 
-console.log(`🔐 Keycloak realm: ${keycloakConfig.realm} | resource: ${keycloakConfig.resource} | url: ${keycloakConfig['auth-server-url']}`);
+console.log(`🔐 [Keycloak] realm: ${keycloakConfig.realm} | resource: ${keycloakConfig.resource} | url: ${keycloakConfig['auth-server-url']}`);
 
 // ── Initialize QnapClient ─────────────────────────────────────────────────────
 const qnapClient = new QnapClient({
