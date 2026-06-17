@@ -324,4 +324,8 @@ router.post('/user/passwd/:userName', async (req, res) => {
   }
 });
 
+router.get('/dummy', (req, res) => {
+  res.json({ status: true, message: 'Dummy route is working!' });
+});
+
 export default router;
